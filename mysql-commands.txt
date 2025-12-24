@@ -1,0 +1,99 @@
+# ============================================
+# demo数据库常用查询命令
+# ============================================
+
+# 1. 查看所有表
+mysql -u root -pmniqzy demo -e "SHOW TABLES;"
+
+# 2. 查看用户表所有数据
+mysql -u root -pmniqzy demo -e "SELECT * FROM users;"
+
+# 3. 查看角色表所有数据
+mysql -u root -pmniqzy demo -e "SELECT * FROM roles;"
+
+# 4. 查看权限表所有数据
+mysql -u root -pmniqzy demo -e "SELECT * FROM permissions;"
+
+# 5. 查看用户角色关联
+mysql -u root -pmniqzy demo -e "SELECT * FROM user_roles;"
+
+# 6. 查看角色权限关联
+mysql -u root -pmniqzy demo -e "SELECT * FROM role_permissions;"
+
+# ============================================
+# 高级查询（关联查询）
+# ============================================
+
+# 7. 查看用户及其角色（关联查询）
+mysql -u root -pmniqzy demo -e "SELECT u.id, u.name, u.email, r.name as role_name, r.description as role_desc FROM users u LEFT JOIN user_roles ur ON u.id = ur.user_id LEFT JOIN roles r ON ur.role_id = r.id ORDER BY u.id;"
+
+# 8. 查看角色及其权限（关联查询）
+mysql -u root -pmniqzy demo -e "SELECT r.id, r.name as role_name, p.name as permission_name, p.description as permission_desc FROM roles r LEFT JOIN role_permissions rp ON r.id = rp.role_id LEFT JOIN permissions p ON rp.permission_id = p.id ORDER BY r.id, p.id;"
+
+# 9. 查看某个用户的所有权限（完整关联）
+mysql -u root -pmniqzy demo -e "SELECT u.id, u.name, r.name as role, p.name as permission FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id JOIN role_permissions rp ON r.id = rp.role_id JOIN permissions p ON rp.permission_id = p.id WHERE u.id = 14;"
+
+# ============================================
+# 统计查询
+# ============================================
+
+# 10. 统计每个角色的用户数量
+mysql -u root -pmniqzy demo -e "SELECT r.name as role_name, COUNT(ur.user_id) as user_count FROM roles r LEFT JOIN user_roles ur ON r.id = ur.role_id GROUP BY r.id, r.name;"
+
+# 11. 统计每个权限的角色数量
+mysql -u root -pmniqzy demo -e "SELECT p.name as permission_name, COUNT(rp.role_id) as role_count FROM permissions p LEFT JOIN role_permissions rp ON p.id = rp.permission_id GROUP BY p.id, p.name;"
+
+# 12. 查看用户总数
+mysql -u root -pmniqzy demo -e "SELECT COUNT(*) as total_users FROM users;"
+
+# ============================================
+# 条件查询
+# ============================================
+
+# 13. 查找所有管理员用户
+mysql -u root -pmniqzy demo -e "SELECT u.id, u.name, u.email FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'ADMIN';"
+
+# 14. 查找有密码的用户（已注册的用户）
+mysql -u root -pmniqzy demo -e "SELECT id, name, email FROM users WHERE password IS NOT NULL AND password != '';"
+
+# 15. 查找年龄大于等于25的用户
+mysql -u root -pmniqzy demo -e "SELECT id, name, age, email FROM users WHERE age >= 25;"
+
+# ============================================
+# 表结构查询
+# ============================================
+
+# 16. 查看users表结构
+mysql -u root -pmniqzy demo -e "DESCRIBE users;"
+
+# 17. 查看roles表结构
+mysql -u root -pmniqzy demo -e "DESCRIBE roles;"
+
+# 18. 查看permissions表结构
+mysql -u root -pmniqzy demo -e "DESCRIBE permissions;"
+
+# ============================================
+# 交互式MySQL（进入MySQL命令行）
+# ============================================
+
+# 19. 进入MySQL交互式命令行
+# mysql -u root -pmniqzy demo
+# 然后可以执行SQL语句，例如：
+#   USE demo;
+#   SELECT * FROM users;
+#   SHOW TABLES;
+#   输入 exit 退出
+
+# ============================================
+# 数据操作（谨慎使用）
+# ============================================
+
+# 20. 删除某个用户（示例：删除id为12的用户）
+# mysql -u root -pmniqzy demo -e "DELETE FROM users WHERE id = 12;"
+
+# 21. 更新用户信息（示例：更新id为8的用户邮箱）
+# mysql -u root -pmniqzy demo -e "UPDATE users SET email = 'newemail@example.com' WHERE id = 8;"
+
+# 22. 给用户分配角色（示例：给用户10分配ADMIN角色）
+# mysql -u root -pmniqzy demo -e "INSERT INTO user_roles (user_id, role_id) VALUES (10, 1);"
+

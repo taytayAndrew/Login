@@ -1,55 +1,12 @@
-import { Form, Input, InputNumber, Button, message, Space } from 'antd';
-import { UserOutlined, MailOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
+import { Form, Input, InputNumber, Button, message } from 'antd';
+import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { useState } from 'react';
 
 const Register = ({ onSuccess }) => {
   const [form] = Form.useForm();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [codeLoading, setCodeLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-
-  // 倒计时效果
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  // 发送验证码
-  const handleSendCode = async () => {
-    try {
-      const email = form.getFieldValue('email');
-      if (!email) {
-        message.warning('请先输入邮箱地址');
-        return;
-      }
-
-      // 验证邮箱格式
-      const emailRegex = /^[A-Za-z0-9+_.-]+@(.+)$/;
-      if (!emailRegex.test(email)) {
-        message.error('请输入有效的邮箱地址');
-        return;
-      }
-
-      setCodeLoading(true);
-      const response = await authAPI.sendVerificationCode(email);
-      
-      if (response.success) {
-        message.success('验证码已发送到您的邮箱，请查收');
-        setCountdown(60); // 60秒倒计时
-      } else {
-        message.error(response.message || '验证码发送失败');
-      }
-    } catch (error) {
-      message.error(error.message || '验证码发送失败，请稍后重试');
-    } finally {
-      setCodeLoading(false);
-    }
-  };
 
   const handleRegister = async (values) => {
     setLoading(true);
@@ -59,13 +16,11 @@ const Register = ({ onSuccess }) => {
         age: values.age,
         email: values.email,
         password: values.password,
-        verificationCode: values.verificationCode,
       });
-      
+
       if (result.success) {
         message.success('注册成功，请登录');
         form.resetFields();
-        setCountdown(0);
         if (onSuccess) {
           onSuccess();
         }

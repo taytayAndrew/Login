@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: project-management-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_DATABASE: project_management
+      MYSQL_USER: ${DB_USERNAME:-pmuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - project-management-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存
+  redis:
+    image: redis:6.0-alpine
+    container_name: project-management-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - project-management-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端服务
+  backend:
+    build:
+      context: ./spring-boot-demo
+      dockerfile: Dockerfile
+    container_name: project-management-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: project_management
+      DB_USERNAME: ${DB_USERNAME:-pmuser}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/var/log/project-management
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - project-management-network
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: project-management-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api/v1
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - project-management-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  project-management-network:
+    driver: bridge
